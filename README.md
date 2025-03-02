@@ -22,7 +22,7 @@ npm install
 ```
 
 ### 3️⃣ Cấu hình bot:
-- Chỉnh sửa file `config.js` với thông tin phù hợp:
+Chỉnh sửa file `config.js` với thông tin phù hợp:
   ```js
   module.exports = {
     token: "YOUR_BOT_TOKEN",
