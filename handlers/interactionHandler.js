@@ -26,7 +26,7 @@ module.exports = async (interaction) => {
       interaction.customId === "support_ticket"
     ) {
       const modal = new ModalBuilder()
-        .setCustomId("ticket_reason")
+        .setCustomId(`ticket_reason_${interaction.customId}`) // Lưu ID nút
         .setTitle("Ma Đạo Store");
 
       const reasonInput = new TextInputBuilder()
@@ -100,17 +100,17 @@ module.exports = async (interaction) => {
         "🔒 Ticket này đã được đóng và di chuyển vào lưu trữ!"
       );
       await channel.setParent(closedTicketCategory);
-      await interaction.reply({
-        content: "🔒 Ticket đã được đóng!",
-        ephemeral: true,
-      });
+      // await interaction.reply({
+      //   content: "🔒 Ticket đã được đóng!",
+      //   ephemeral: true,
+      // });
     }
   } else if (interaction.isModalSubmit()) {
-    if (interaction.customId === "ticket_reason") {
+    if (interaction.customId.startsWith("ticket_reason_")) {
       const reason = interaction.fields.getTextInputValue("reason_input");
       const guild = interaction.guild;
       const ticketType =
-        interaction.customId === "buy_ticket"
+        interaction.customId === "ticket_reason_buy_ticket"
           ? "Mua hàng"
           : "Hỗ trợ / Bảo hành";
 
