@@ -182,5 +182,7 @@ module.exports = async (interaction) => {
         ephemeral: true,
       });
     }
+  } else {
+    await interaction.deferReply({ ephemeral: true });
   }
 };
