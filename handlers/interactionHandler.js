@@ -183,6 +183,9 @@ module.exports = async (interaction) => {
       });
     }
   } else {
-    await interaction.deferReply({ ephemeral: true });
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.deferReply({ ephemeral: true });
+    }
+    return;
   }
 };
