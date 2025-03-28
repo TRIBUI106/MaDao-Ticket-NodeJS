@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, ActivityType } = require("discord.js");
 const { token, prefix } = require("./config.js");
 const handleInteraction = require("./handlers/interactionHandler");
 const handleTicketCommand = require("./handlers/ticketHandler");
@@ -29,6 +29,16 @@ client.on("messageCreate", async (message) => {
 
 client.on("interactionCreate", async (interaction) => {
   handleInteraction(interaction);
+});
+
+client.once("ready", () => {
+  console.log(`Bot đã sẵn sàng! Đăng nhập với tên: ${client.user.tag}`);
+  client.user.setPresence({
+    activities: [
+      { name: `Mua hàng đi ngừi đẹp`, type: ActivityType.Streaming },
+    ],
+    status: "dnd",
+  });
 });
 
 client.login(token);
