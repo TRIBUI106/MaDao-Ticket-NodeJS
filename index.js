@@ -12,10 +12,6 @@ const client = new Client({
   ],
 });
 
-client.once("ready", () => {
-  console.log(`Bot đã sẵn sàng! Đăng nhập với tên: ${client.user.tag}`);
-});
-
 client.on("messageCreate", async (message) => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;
 
