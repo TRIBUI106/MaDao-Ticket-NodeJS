@@ -8,6 +8,8 @@ const {
   TextInputBuilder,
   TextInputStyle,
   PermissionsBitField,
+  CategoryChannel,
+  PermissionFlagsBits,
 } = require("discord.js");
 const {
   closedTicketCategory,
@@ -15,10 +17,54 @@ const {
   roleSupport,
 } = require("../config.js");
 
+const fs = require("fs");
+const path = require("path");
+const configPath = path.join(__dirname, "../config.js");
+const config = require(configPath);
+
+/**
+ * Kiểm tra nếu category full 50 kênh, tạo category mới
+ * @param {Guild} guild - Server Discord
+ * @returns {Promise<CategoryChannel>} - Category mới hoặc category cũ nếu chưa đầy
+ */
+async function getOrCreateClosedCategory(guild) {
+  let category = guild.channels.cache.get(config.closedTicketCategory);
+
+  // Nếu category đầy (50 kênh)
+  if (category && category.children.cache.size >= 50) {
+    const date = new Date();
+    const newCategoryName = `Kho Ticket Từ ${date.getDate()}-${
+      date.getMonth() + 1
+    }`;
+
+    // Tạo category mới
+    category = await guild.channels.create({
+      name: newCategoryName,
+      type: 4, // 4 là Category
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone.id,
+          deny: [PermissionFlagsBits.ViewChannel],
+        },
+      ],
+    });
+
+    // Cập nhật config
+    config.closedTicketCategory = category.id;
+    fs.writeFileSync(
+      configPath,
+      `module.exports = ${JSON.stringify(config, null, 2)};`
+    );
+  }
+
+  return category;
+}
+
 module.exports = async (interaction) => {
   const user = interaction.user;
   const channel = interaction.channel;
   const member = await interaction.guild.members.fetch(user.id);
+  const ticketOwnerId = channel.topic;
 
   if (interaction.isButton()) {
     if (
@@ -48,7 +94,7 @@ module.exports = async (interaction) => {
           ephemeral: true,
         });
       }
-      await channel.permissionOverwrites.edit(channel.topic, {
+      await channel.permissionOverwrites.edit(ticketOwnerId, {
         ViewChannel: false,
       });
       await interaction.update({
@@ -72,7 +118,7 @@ module.exports = async (interaction) => {
           ephemeral: true,
         });
       }
-      await channel.permissionOverwrites.edit(channel.topic, {
+      await channel.permissionOverwrites.edit(ticketOwnerId, {
         ViewChannel: true,
       });
       await interaction.update({
@@ -99,7 +145,11 @@ module.exports = async (interaction) => {
       await channel.send(
         "🔒 Ticket này đã được đóng và di chuyển vào lưu trữ!"
       );
-      await channel.setParent(closedTicketCategory);
+
+      const closedCategory = await getOrCreateClosedCategory(interaction.guild);
+      await interaction.channel.setParent(closedCategory.id);
+
+      // await channel.setParent(closedTicketCategory);
       // await interaction.reply({
       //   content: "🔒 Ticket đã được đóng!",
       //   ephemeral: true,
