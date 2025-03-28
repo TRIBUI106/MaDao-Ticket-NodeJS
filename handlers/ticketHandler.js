@@ -30,11 +30,13 @@ module.exports = async (message) => {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("buy_ticket")
-      .setLabel("🛒 Mua hàng")
+      .setLabel("Mua hàng")
+      .setEmoji("<:18419pengucheckmate:1344556787822497814>")
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId("support_ticket")
-      .setLabel("🏦 Hỗ Trợ / Bảo Hành")
+      .setLabel("Hỗ Trợ / Bảo Hành")
+      .setEmoji("<:52305penguhmmthink:1344556802024673320>")
       .setStyle(ButtonStyle.Success)
   );
 
