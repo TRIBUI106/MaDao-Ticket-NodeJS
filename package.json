@@ -45,10 +45,9 @@
     "undici-types": "^6.20.0",
     "ws": "^8.18.1"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
+    "dev": "nodemon --legacy-watch index.js"
   },
   "keywords": [],
   "author": "",
