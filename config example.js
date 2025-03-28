@@ -4,5 +4,4 @@ module.exports = {
   prefix: "tk!", // Đổi theo ý muốn
   ownerId: "", // Thêm cho vui, chả làm được gì
   ticketCategory: "", // Category chứa kênh khi ticket được tạo
-  closedTicketCategory: "", // Category chứa kênh khi ticket bị xoá
 };

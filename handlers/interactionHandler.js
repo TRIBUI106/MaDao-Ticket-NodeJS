@@ -8,57 +8,13 @@ const {
   TextInputBuilder,
   TextInputStyle,
   PermissionsBitField,
-  CategoryChannel,
-  PermissionFlagsBits,
 } = require("discord.js");
 const {
-  closedTicketCategory,
   ticketCategory,
   roleSupport,
+  ticketNamePrefix,
 } = require("../config.js");
-
-const fs = require("fs");
-const path = require("path");
-const configPath = path.join(__dirname, "../config.js");
-const config = require(configPath);
-
-/**
- * Kiểm tra nếu category full 50 kênh, tạo category mới
- * @param {Guild} guild - Server Discord
- * @returns {Promise<CategoryChannel>} - Category mới hoặc category cũ nếu chưa đầy
- */
-async function getOrCreateClosedCategory(guild) {
-  let category = guild.channels.cache.get(config.closedTicketCategory);
-
-  // Nếu category đầy (50 kênh)
-  if (category && category.children.cache.size >= 50) {
-    const date = new Date();
-    const newCategoryName = `Kho Ticket Từ ${date.getDate()}-${
-      date.getMonth() + 1
-    }`;
-
-    // Tạo category mới
-    category = await guild.channels.create({
-      name: newCategoryName,
-      type: 4, // 4 là Category
-      permissionOverwrites: [
-        {
-          id: guild.roles.everyone.id,
-          deny: [PermissionFlagsBits.ViewChannel],
-        },
-      ],
-    });
-
-    // Cập nhật config
-    config.closedTicketCategory = category.id;
-    fs.writeFileSync(
-      configPath,
-      `module.exports = ${JSON.stringify(config, null, 2)};`
-    );
-  }
-
-  return category;
-}
+const { getOrCreateKhoTicketCategory } = require("./categoryHandler");
 
 module.exports = async (interaction) => {
   const user = interaction.user;
@@ -142,18 +98,24 @@ module.exports = async (interaction) => {
           ephemeral: true,
         });
       }
-      await channel.send(
-        "🔒 Ticket này đã được đóng và di chuyển vào lưu trữ!"
-      );
 
-      const closedCategory = await getOrCreateClosedCategory(interaction.guild);
-      await interaction.channel.setParent(closedCategory.id);
+      try {
+        const khoTicketCategory = await getOrCreateKhoTicketCategory(
+          interaction.guild
+        );
 
-      // await channel.setParent(closedTicketCategory);
-      // await interaction.reply({
-      //   content: "🔒 Ticket đã được đóng!",
-      //   ephemeral: true,
-      // });
+        await interaction.channel.setParent(khoTicketCategory);
+        await interaction.reply({
+          content: "🔒 Ticket này đã được đóng và di chuyển vào kho lưu trữ!",
+          ephemeral: true,
+        });
+      } catch (error) {
+        console.error("Lỗi:", error);
+        await interaction.reply({
+          content: "Lỗi: " + error.message,
+          ephemeral: true,
+        });
+      }
     }
   } else if (interaction.isModalSubmit()) {
     if (interaction.customId.startsWith("ticket_reason_")) {
@@ -165,7 +127,7 @@ module.exports = async (interaction) => {
           : "Hỗ trợ / Bảo hành";
 
       const ticketChannel = await guild.channels.create({
-        name: `💌┃${interaction.user.username}`,
+        name: `${ticketNamePrefix}${interaction.user.username}`,
         type: 0, // ChannelType.GuildText
         parent: ticketCategory,
         topic: user.id,
