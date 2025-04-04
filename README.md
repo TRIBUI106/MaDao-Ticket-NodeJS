@@ -57,6 +57,10 @@ Mọi đóng góp đều được hoan nghênh! Nếu bạn có ý tưởng ho�
 
 Dự án này được cấp phép theo [MIT License](LICENSE).
 
+## 💻 Lập trình viên :
+- chez1s
+- Xio279
+
 ---
 
 ❤️ Được tạo bởi Ma Đạo Store Developer Team.
