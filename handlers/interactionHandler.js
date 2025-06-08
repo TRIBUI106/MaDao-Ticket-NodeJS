@@ -166,7 +166,7 @@ module.exports = async (interaction) => {
             );
             const guild = interaction.guild;
             const today = new Date();
-            const day = today.getDate(); // 8
+            const day = today.getDate() + 1; // 8
             const month = today.getMonth() + 1; // 6
             const dateStr = `Kho ticket từ ${day}/${month}`; // Kho ticket từ 8/6
 
