@@ -109,7 +109,7 @@ module.exports = async (interaction) => {
           ],
         });
       }
-  
+
       // Xử lý nút "close_ticket"
       else if (interaction.customId === "close_ticket") {
         await interaction.deferReply({ ephemeral: true }); // Defer để tránh interaction failed
@@ -149,7 +149,7 @@ module.exports = async (interaction) => {
             throw new Error("Guild hoặc channel không tồn tại");
           }
 
-          // Fetch lại closedTicketCategory để tránh lỗi unknown channel
+          // Fetch và kiểm tra closedTicketCategory
           let closedCategory;
           try {
             closedCategory = await interaction.guild.channels.fetch(
@@ -160,10 +160,32 @@ module.exports = async (interaction) => {
               throw new Error("Category không hợp lệ");
             }
           } catch (error) {
-            console.error(
-              `Lỗi fetch closedTicketCategory (${closedTicketCategory}): ${error.message}`
+            console.log(
+              `Không tìm thấy closedTicketCategory (${closedTicketCategory}), tạo mới...`
             );
-            throw new Error("Không tìm thấy danh mục lưu trữ ticket");
+            const guild = interaction.guild;
+            const today = new Date();
+            const day = today.getDate(); // 8
+            const month = today.getMonth() + 1; // 6
+            const dateStr = `Kho ticket từ ${day}/${month}`; // Kho ticket từ 8/6
+
+            // Tạo category mới
+            closedCategory = await guild.channels.create({
+              name: dateStr,
+              type: 4,
+              permissionOverwrites: [
+                { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+              ],
+            });
+
+            // Cập nhật config.js
+            const configPath = "./config.js";
+            const configContent = await fs.readFile(configPath, "utf8");
+            const updatedConfig = configContent.replace(
+              /closedTicketCategory: "\d+"/,
+              `closedTicketCategory: "${closedCategory.id}"`
+            );
+            await fs.writeFile(configPath, updatedConfig);
           }
 
           // Kiểm tra số lượng kênh
@@ -171,8 +193,8 @@ module.exports = async (interaction) => {
             const guild = interaction.guild;
             const today = new Date();
             const day = today.getDate();
-            const month = today.getMonth() + 1; // 6 cho tháng 6
-            const dateStr = `Kho ticket từ ${day}/${month}`; // Format: Kho ticket từ 8/6
+            const month = today.getMonth() + 1;
+            const dateStr = `Kho ticket từ ${day}/${month}`; // Kho ticket từ 8/6
 
             // Tạo category mới
             const newCategory = await guild.channels.create({
@@ -215,7 +237,7 @@ module.exports = async (interaction) => {
               },
             ]);
             await channel.send({ embeds: [closeEmbed] });
-            await channel.setParent(closedTicketCategory);
+            await channel.setParent(closedCategory.id);
             await interaction.editReply({
               content: "🔒 Ticket đã được đóng và di chuyển vào lưu trữ!",
             });
