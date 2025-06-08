@@ -111,7 +111,6 @@ module.exports = async (interaction) => {
       }
 
       // Xử lý nút "close_ticket"
-      // Xử lý nút "close_ticket"
       else if (interaction.customId === "close_ticket") {
         const member = await fetchMember();
         if (!roleSupport.some((roleId) => member.roles.cache.has(roleId))) {
@@ -136,7 +135,8 @@ module.exports = async (interaction) => {
                 timeZone: "Asia/Ho_Chi_Minh",
               }),
               inline: true,
-            }
+            },
+            { name: "📌 Channel", value: `<#${channel.id}>`, inline: true }
           )
           .setImage(
             "https://media.discordapp.net/attachments/1333290953842233354/1343213717306736640/GIF_UPDATE.gif?ex=67c26381&is=67c11201&hm=34e74c8499bd10d38dabecca15e545d1f766ef19f46e435f6efb44ddf7cee587&=&width=703&height=396"
@@ -145,17 +145,47 @@ module.exports = async (interaction) => {
             text: "MDS | Made With 💓",
             iconURL:
               "https://media.discordapp.net/attachments/1333290953842233354/1343213715490869392/GIF.gif?ex=67c26381&is=67c11201&hm=3cae06abd49e8032362fa81e4ca8391735f06a236d450826f100dce95cd88aa4&=&width=216&height=216",
+          })
+          .setTimestamp();
+
+        // Kiểm tra channel và guild trước khi thực hiện
+        if (!interaction.guild || !channel) {
+          console.error(
+            `Lỗi: Guild hoặc channel không tồn tại cho ticket ${
+              channel?.name || "unknown"
+            }`
+          );
+          return interaction.reply({
+            content:
+              "❌ Lỗi: Không tìm thấy guild hoặc channel. Vui lòng thử lại!",
+            flags: 64,
           });
+        }
 
         // Kiểm tra số lượng kênh trong closedTicketCategory
-        const closedCategory = await interaction.guild.channels.fetch(
-          closedTicketCategory
-        );
+        let closedCategory;
+        try {
+          closedCategory = await interaction.guild.channels.fetch(
+            closedTicketCategory,
+            { cache: false }
+          );
+          if (!closedCategory || closedCategory.type !== 4) {
+            throw new Error("Category không hợp lệ hoặc không tồn tại");
+          }
+        } catch (error) {
+          console.error(
+            `Lỗi khi fetch closedTicketCategory (${closedTicketCategory}): ${error.message}`
+          );
+          return interaction.reply({
+            content: "❌ Lỗi: Không tìm thấy danh mục lưu trữ ticket!",
+            flags: 64,
+          });
+        }
+
         const channelCount = closedCategory.children.cache.size;
 
         if (channelCount >= 50) {
           try {
-            // Gửi thông báo đến owner
             const guild = interaction.guild;
             const date = new Date().toLocaleDateString("vi-VN", {
               day: "2-digit",
@@ -163,6 +193,7 @@ module.exports = async (interaction) => {
               timeZone: "Asia/Ho_Chi_Minh",
             });
 
+            // Tạo embed thông báo kho đầy
             const warningEmbed = new EmbedBuilder()
               .setTitle("⚠️ Cảnh Báo: Category Ticket Đã Đầy")
               .setDescription(
@@ -181,42 +212,89 @@ module.exports = async (interaction) => {
                 text: "MDS | Made With 💓",
                 iconURL:
                   "https://media.discordapp.net/attachments/1333290953842233354/1343213715490869392/GIF.gif?ex=67c26381&is=67c11201&hm=3cae06abd49e8032362fa81e4ca8391735f06a236d450826f100dce95cd88aa4&=&width=216&height=216",
-              });
+              })
+              .setTimestamp();
 
             // Gửi embed tới ownerId
-            const owner = await interaction.client.users.fetch(ownerId);
-            await owner.send({ embeds: [warningEmbed] }).catch((error) => {
+            let owner;
+            try {
+              owner = await interaction.client.users.fetch(ownerId, {
+                cache: false,
+              });
+              await owner.send({ embeds: [warningEmbed] });
+            } catch (error) {
               console.error(
                 `Không thể gửi DM tới owner (${ownerId}): ${error.message}`
               );
-            });
+            }
 
-            // Tạo category mới với permission ViewChannel của @everyone là false
-            const newCategory = await guild.channels.create({
-              name: `Kho ticket từ ${date}`,
-              type: 4, // GuildCategory
-              permissionOverwrites: [
-                { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-              ],
-            });
+            // Tạo category mới với retry
+            let newCategory;
+            let retryCount = 0;
+            const maxRetries = 2;
+            while (retryCount <= maxRetries) {
+              try {
+                newCategory = await guild.channels.create({
+                  name: `Kho ticket từ ${date}`,
+                  type: 4, // GuildCategory
+                  permissionOverwrites: [
+                    {
+                      id: guild.id,
+                      deny: [PermissionsBitField.Flags.ViewChannel],
+                    },
+                  ],
+                });
+                break;
+              } catch (error) {
+                retryCount++;
+                if (retryCount > maxRetries) {
+                  throw new Error(`Lỗi tạo category mới: ${error.message}`);
+                }
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+              }
+            }
 
             // Ghi file config.js với ID category mới
-            const configPath = "./config.js";
-            const configContent = await fs.readFile(configPath, "utf8");
-            const updatedConfig = configContent.replace(
-              /closedTicketCategory: "\d+"/,
-              `closedTicketCategory: "${newCategory.id}"`
-            );
-            await fs.writeFile(configPath, updatedConfig);
+            try {
+              const configPath = "./config.js";
+              const configContent = await fs.readFile(configPath, "utf8");
+              const updatedConfig = configContent.replace(
+                /closedTicketCategory: "\d+"/,
+                `closedTicketCategory: "${newCategory.id}"`
+              );
+              await fs.writeFile(configPath, updatedConfig);
+            } catch (error) {
+              console.error(`Lỗi khi ghi config.js: ${error.message}`);
+              throw error;
+            }
 
-            // Xóa toàn bộ permission overwrites và set ViewChannel của @everyone thành false
-            await channel.permissionOverwrites.set([
-              { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-            ]);
+            // Retry mechanism để set permission
+            retryCount = 0;
+            let success = false;
+            while (retryCount <= maxRetries && !success) {
+              try {
+                await channel.permissionOverwrites.set(
+                  [
+                    {
+                      id: guild.id,
+                      deny: [PermissionsBitField.Flags.ViewChannel],
+                    },
+                  ],
+                  { timeout: 5000 }
+                );
+                success = true;
+              } catch (error) {
+                retryCount++;
+                if (retryCount > maxRetries) {
+                  throw new Error(`Lỗi set permission: ${error.message}`);
+                }
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+              }
+            }
 
-            // Di chuyển ticket sang category mới và gửi embed
+            // Di chuyển ticket và gửi embed
             await channel.send({ embeds: [closeEmbed] });
-            await channel.setParent(newCategory.id);
+            await channel.setParent(newCategory.id, { lockPermissions: false });
             await interaction.reply({
               content: "🔒 Ticket đã được đóng và di chuyển vào kho mới!",
               flags: 64,
@@ -230,24 +308,45 @@ module.exports = async (interaction) => {
             // Chủ động restart bot
             process.exit(0);
           } catch (error) {
-            console.error(`Lỗi khi xử lý đóng ticket: ${error.message}`);
+            console.error(
+              `Lỗi khi xử lý đóng ticket ${channel.name}: ${error.message}`
+            );
             await interaction.reply({
-              content: "❌ Có lỗi xảy ra khi đóng ticket. Vui lòng thử lại!",
+              content: `❌ Có lỗi xảy ra khi đóng ticket: ${error.message}. Vui lòng thử lại!`,
               flags: 64,
             });
           }
         } else {
-          // Xóa toàn bộ permission overwrites và set ViewChannel của @everyone thành false
-          await channel.permissionOverwrites.set([
-            {
-              id: interaction.guild.id,
-              deny: [PermissionsBitField.Flags.ViewChannel],
-            },
-          ]);
+          // Retry mechanism để set permission
+          let retryCount = 0;
+          const maxRetries = 2;
+          let success = false;
+          while (retryCount <= maxRetries && !success) {
+            try {
+              await channel.permissionOverwrites.set(
+                [
+                  {
+                    id: interaction.guild.id,
+                    deny: [PermissionsBitField.Flags.ViewChannel],
+                  },
+                ],
+                { timeout: 5000 }
+              );
+              success = true;
+            } catch (error) {
+              retryCount++;
+              if (retryCount > maxRetries) {
+                throw new Error(`Lỗi set permission: ${error.message}`);
+              }
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+          }
 
-          // Di chuyển ticket vào category hiện tại và gửi embed
+          // Di chuyển ticket và gửi embed
           await channel.send({ embeds: [closeEmbed] });
-          await channel.setParent(closedTicketCategory);
+          await channel.setParent(closedTicketCategory, {
+            lockPermissions: false,
+          });
           await interaction.reply({
             content: "🔒 Ticket đã được đóng và di chuyển vào lưu trữ!",
             flags: 64,
