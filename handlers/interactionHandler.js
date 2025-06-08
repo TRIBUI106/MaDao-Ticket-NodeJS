@@ -111,6 +111,7 @@ module.exports = async (interaction) => {
       }
 
       // Xử lý nút "close_ticket"
+      // Xử lý nút "close_ticket"
       else if (interaction.customId === "close_ticket") {
         await interaction.deferReply({ ephemeral: true }); // Defer để tránh interaction failed
         const member = await fetchMember();
@@ -186,6 +187,21 @@ module.exports = async (interaction) => {
               `closedTicketCategory: "${closedCategory.id}"`
             );
             await fs.writeFile(configPath, updatedConfig);
+
+            // Log vào channel 1355258075208220895
+            const logChannel = await interaction.guild.channels.fetch(
+              "1355258075208220895",
+              { cache: true }
+            );
+            if (logChannel) {
+              await logChannel.send(
+                `✅ Đã tạo kho mới: **${dateStr}** (ID: ${
+                  closedCategory.id
+                }) vào ${new Date().toLocaleString("vi-VN", {
+                  timeZone: "Asia/Ho_Chi_Minh",
+                })} bởi ${user.tag}`
+              );
+            }
           }
 
           // Kiểm tra số lượng kênh
@@ -213,6 +229,21 @@ module.exports = async (interaction) => {
               `closedTicketCategory: "${newCategory.id}"`
             );
             await fs.writeFile(configPath, updatedConfig);
+
+            // Log vào channel 1355258075208220895
+            const logChannel = await interaction.guild.channels.fetch(
+              "1355258075208220895",
+              { cache: true }
+            );
+            if (logChannel) {
+              await logChannel.send(
+                `✅ Đã tạo kho mới: **${dateStr}** (ID: ${
+                  newCategory.id
+                }) vào ${new Date().toLocaleString("vi-VN", {
+                  timeZone: "Asia/Ho_Chi_Minh",
+                })} bởi ${user.tag}`
+              );
+            }
 
             // Set permission và di chuyển ticket
             await channel.permissionOverwrites.set([
