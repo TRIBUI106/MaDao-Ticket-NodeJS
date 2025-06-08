@@ -109,7 +109,7 @@ module.exports = async (interaction) => {
           ],
         });
       }
-
+  
       // Xử lý nút "close_ticket"
       else if (interaction.customId === "close_ticket") {
         await interaction.deferReply({ ephemeral: true }); // Defer để tránh interaction failed
@@ -149,52 +149,34 @@ module.exports = async (interaction) => {
             throw new Error("Guild hoặc channel không tồn tại");
           }
 
-          // Kiểm tra và fetch closedTicketCategory
-          let closedCategory = await interaction.guild.channels.fetch(
-            closedTicketCategory,
-            { cache: false }
-          );
-          if (!closedCategory || closedCategory.type !== 4) {
-            throw new Error("Category không hợp lệ");
+          // Fetch lại closedTicketCategory để tránh lỗi unknown channel
+          let closedCategory;
+          try {
+            closedCategory = await interaction.guild.channels.fetch(
+              closedTicketCategory,
+              { cache: true, force: true }
+            );
+            if (!closedCategory || closedCategory.type !== 4) {
+              throw new Error("Category không hợp lệ");
+            }
+          } catch (error) {
+            console.error(
+              `Lỗi fetch closedTicketCategory (${closedTicketCategory}): ${error.message}`
+            );
+            throw new Error("Không tìm thấy danh mục lưu trữ ticket");
           }
 
-          // Xử lý khi category đầy
+          // Kiểm tra số lượng kênh
           if (closedCategory.children.cache.size >= 50) {
             const guild = interaction.guild;
-            const date = new Date().toLocaleDateString("vi-VN", {
-              day: "2-digit",
-              month: "2-digit",
-              timeZone: "Asia/Ho_Chi_Minh",
-            });
-
-            // Gửi thông báo đến owner
-            const warningEmbed = new EmbedBuilder()
-              .setTitle("⚠️ Kho Ticket Đầy")
-              .setDescription(
-                `Category **${closedCategory.name}** đã đầy. Tạo category mới và restart bot.`
-              )
-              .setColor("#FF0000")
-              .addFields({ name: "Thời gian", value: date })
-              .setFooter({
-                text: "MDS | Made With 💓",
-                iconURL:
-                  "https://media.discordapp.net/attachments/1333290953842233354/1343213715490869392/GIF.gif",
-              });
-
-            try {
-              const owner = await interaction.client.users.fetch(ownerId, {
-                cache: false,
-              });
-              await owner.send({ embeds: [warningEmbed] });
-            } catch (error) {
-              console.error(
-                `Không gửi được DM tới owner (${ownerId}): ${error.message}`
-              );
-            }
+            const today = new Date();
+            const day = today.getDate();
+            const month = today.getMonth() + 1; // 6 cho tháng 6
+            const dateStr = `Kho ticket từ ${day}/${month}`; // Format: Kho ticket từ 8/6
 
             // Tạo category mới
             const newCategory = await guild.channels.create({
-              name: `Kho ticket từ ${date}`,
+              name: dateStr,
               type: 4,
               permissionOverwrites: [
                 { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
