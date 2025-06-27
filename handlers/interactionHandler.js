@@ -111,176 +111,179 @@ module.exports = async (interaction) => {
       }
 
       // Xử lý nút "close_ticket"
-      // Xử lý nút "close_ticket"
       else if (interaction.customId === "close_ticket") {
         await interaction.deferReply({ ephemeral: true }); // Defer để tránh interaction failed
+        return interaction.editReply({
+          content: "❌ Đang bảo trì, xài xài con cặc !",
+        });
+
         const member = await fetchMember();
-        if (!roleSupport.some((roleId) => member.roles.cache.has(roleId))) {
-          return interaction.editReply({
-            content: "❌ Bạn không có quyền sử dụng chức năng này!",
-          });
-        }
+        // if (!roleSupport.some((roleId) => member.roles.cache.has(roleId))) {
+        //   return interaction.editReply({
+        //     content: "❌ Bạn không có quyền sử dụng chức năng này!",
+        //   });
+        // }
 
-        // Tạo embed thông báo đóng ticket
-        const closeEmbed = new EmbedBuilder()
-          .setTitle("🔒 Ticket Đã Được Đóng")
-          .setDescription(
-            "Ticket này đã được đóng và lưu trữ. Cảm ơn bạn đã sử dụng dịch vụ! 🎉"
-          )
-          .setColor("#FF9900")
-          .addFields(
-            { name: "👤 Người đóng", value: `<@${user.id}>`, inline: true },
-            {
-              name: "🕛 Thời gian",
-              value: new Date().toLocaleString("vi-VN", {
-                timeZone: "Asia/Ho_Chi_Minh",
-              }),
-              inline: true,
-            }
-          )
-          .setFooter({
-            text: "MDS | Made With 💓",
-            iconURL:
-              "https://media.discordapp.net/attachments/1333290953842233354/1343213715490869392/GIF.gif",
-          });
+        // // Tạo embed thông báo đóng ticket
+        // const closeEmbed = new EmbedBuilder()
+        //   .setTitle("🔒 Ticket Đã Được Đóng")
+        //   .setDescription(
+        //     "Ticket này đã được đóng và lưu trữ. Cảm ơn bạn đã sử dụng dịch vụ! 🎉"
+        //   )
+        //   .setColor("#FF9900")
+        //   .addFields(
+        //     { name: "👤 Người đóng", value: `<@${user.id}>`, inline: true },
+        //     {
+        //       name: "🕛 Thời gian",
+        //       value: new Date().toLocaleString("vi-VN", {
+        //         timeZone: "Asia/Ho_Chi_Minh",
+        //       }),
+        //       inline: true,
+        //     }
+        //   )
+        //   .setFooter({
+        //     text: "MDS | Made With 💓",
+        //     iconURL:
+        //       "https://media.discordapp.net/attachments/1333290953842233354/1343213715490869392/GIF.gif",
+        //   });
 
-        try {
-          // Kiểm tra channel và guild
-          if (!interaction.guild || !channel) {
-            throw new Error("Guild hoặc channel không tồn tại");
-          }
+        // try {
+        //   // Kiểm tra channel và guild
+        //   if (!interaction.guild || !channel) {
+        //     throw new Error("Guild hoặc channel không tồn tại");
+        //   }
 
-          // Fetch và kiểm tra closedTicketCategory
-          let closedCategory;
-          try {
-            closedCategory = await interaction.guild.channels.fetch(
-              closedTicketCategory,
-              { cache: true, force: true }
-            );
-            if (!closedCategory || closedCategory.type !== 4) {
-              throw new Error("Category không hợp lệ");
-            }
-          } catch (error) {
-            console.log(
-              `Không tìm thấy closedTicketCategory (${closedTicketCategory}), tạo mới...`
-            );
-            const guild = interaction.guild;
-            const today = new Date();
-            const day = today.getDate() + 1; // 8
-            const month = today.getMonth() + 1; // 6
-            const dateStr = `Kho ticket từ ${day}/${month}`; // Kho ticket từ 8/6
+        //   // Fetch và kiểm tra closedTicketCategory
+        //   let closedCategory;
+        //   try {
+        //     closedCategory = await interaction.guild.channels.fetch(
+        //       closedTicketCategory,
+        //       { cache: true, force: true }
+        //     );
+        //     if (!closedCategory || closedCategory.type !== 4) {
+        //       throw new Error("Category không hợp lệ");
+        //     }
+        //   } catch (error) {
+        //     console.log(
+        //       `Không tìm thấy closedTicketCategory (${closedTicketCategory}), tạo mới...`
+        //     );
+        //     const guild = interaction.guild;
+        //     const today = new Date();
+        //     const day = today.getDate() + 1; // 8
+        //     const month = today.getMonth() + 1; // 6
+        //     const dateStr = `Kho ticket từ ${day}/${month}`; // Kho ticket từ 8/6
 
-            // Tạo category mới
-            closedCategory = await guild.channels.create({
-              name: dateStr,
-              type: 4,
-              permissionOverwrites: [
-                { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-              ],
-            });
+        //     // Tạo category mới
+        //     closedCategory = await guild.channels.create({
+        //       name: dateStr,
+        //       type: 4,
+        //       permissionOverwrites: [
+        //         { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+        //       ],
+        //     });
 
-            // Cập nhật config.js
-            const configPath = "./config.js";
-            const configContent = await fs.readFile(configPath, "utf8");
-            const updatedConfig = configContent.replace(
-              /closedTicketCategory: "\d+"/,
-              `closedTicketCategory: "${closedCategory.id}"`
-            );
-            await fs.writeFile(configPath, updatedConfig);
+        //     // Cập nhật config.js
+        //     const configPath = "./config.js";
+        //     const configContent = await fs.readFile(configPath, "utf8");
+        //     const updatedConfig = configContent.replace(
+        //       /closedTicketCategory: "\d+"/,
+        //       `closedTicketCategory: "${closedCategory.id}"`
+        //     );
+        //     await fs.writeFile(configPath, updatedConfig);
 
-            // Log vào channel 1355258075208220895
-            const logChannel = await interaction.guild.channels.fetch(
-              "1355258075208220895",
-              { cache: true }
-            );
-            if (logChannel) {
-              await logChannel.send(
-                `✅ Đã tạo kho mới: **${dateStr}** (ID: ${
-                  closedCategory.id
-                }) vào ${new Date().toLocaleString("vi-VN", {
-                  timeZone: "Asia/Ho_Chi_Minh",
-                })} bởi ${user.tag}`
-              );
-            }
-          }
+        //     // Log vào channel 1355258075208220895
+        //     const logChannel = await interaction.guild.channels.fetch(
+        //       "1355258075208220895",
+        //       { cache: true }
+        //     );
+        //     if (logChannel) {
+        //       await logChannel.send(
+        //         `✅ Đã tạo kho mới: **${dateStr}** (ID: ${
+        //           closedCategory.id
+        //         }) vào ${new Date().toLocaleString("vi-VN", {
+        //           timeZone: "Asia/Ho_Chi_Minh",
+        //         })} bởi ${user.tag}`
+        //       );
+        //     }
+        //   }
 
-          // Kiểm tra số lượng kênh
-          if (closedCategory.children.cache.size >= 50) {
-            const guild = interaction.guild;
-            const today = new Date();
-            const day = today.getDate();
-            const month = today.getMonth() + 1;
-            const dateStr = `Kho ticket từ ${day}/${month}`; // Kho ticket từ 8/6
+        //   // Kiểm tra số lượng kênh
+        //   if (closedCategory.children.cache.size >= 50) {
+        //     const guild = interaction.guild;
+        //     const today = new Date();
+        //     const day = today.getDate();
+        //     const month = today.getMonth() + 1;
+        //     const dateStr = `Kho ticket từ ${day}/${month}`; // Kho ticket từ 8/6
 
-            // Tạo category mới
-            const newCategory = await guild.channels.create({
-              name: dateStr,
-              type: 4,
-              permissionOverwrites: [
-                { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-              ],
-            });
+        //     // Tạo category mới
+        //     const newCategory = await guild.channels.create({
+        //       name: dateStr,
+        //       type: 4,
+        //       permissionOverwrites: [
+        //         { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+        //       ],
+        //     });
 
-            // Cập nhật config.js
-            const configPath = "./config.js";
-            const configContent = await fs.readFile(configPath, "utf8");
-            const updatedConfig = configContent.replace(
-              /closedTicketCategory: "\d+"/,
-              `closedTicketCategory: "${newCategory.id}"`
-            );
-            await fs.writeFile(configPath, updatedConfig);
+        //     // Cập nhật config.js
+        //     const configPath = "./config.js";
+        //     const configContent = await fs.readFile(configPath, "utf8");
+        //     const updatedConfig = configContent.replace(
+        //       /closedTicketCategory: "\d+"/,
+        //       `closedTicketCategory: "${newCategory.id}"`
+        //     );
+        //     await fs.writeFile(configPath, updatedConfig);
 
-            // Log vào channel 1355258075208220895
-            const logChannel = await interaction.guild.channels.fetch(
-              "1355258075208220895",
-              { cache: true }
-            );
-            if (logChannel) {
-              await logChannel.send(
-                `✅ Đã tạo kho mới: **${dateStr}** (ID: ${
-                  newCategory.id
-                }) vào ${new Date().toLocaleString("vi-VN", {
-                  timeZone: "Asia/Ho_Chi_Minh",
-                })} bởi ${user.tag}`
-              );
-            }
+        //     // Log vào channel 1355258075208220895
+        //     const logChannel = await interaction.guild.channels.fetch(
+        //       "1355258075208220895",
+        //       { cache: true }
+        //     );
+        //     if (logChannel) {
+        //       await logChannel.send(
+        //         `✅ Đã tạo kho mới: **${dateStr}** (ID: ${
+        //           newCategory.id
+        //         }) vào ${new Date().toLocaleString("vi-VN", {
+        //           timeZone: "Asia/Ho_Chi_Minh",
+        //         })} bởi ${user.tag}`
+        //       );
+        //     }
 
-            // Set permission và di chuyển ticket
-            await channel.permissionOverwrites.set([
-              { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-            ]);
-            await channel.send({ embeds: [closeEmbed] });
-            await channel.setParent(newCategory.id);
-            await interaction.editReply({
-              content: "🔒 Ticket đã được đóng và di chuyển vào kho mới!",
-            });
+        //     // Set permission và di chuyển ticket
+        //     await channel.permissionOverwrites.set([
+        //       { id: guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+        //     ]);
+        //     await channel.send({ embeds: [closeEmbed] });
+        //     await channel.setParent(newCategory.id);
+        //     await interaction.editReply({
+        //       content: "🔒 Ticket đã được đóng và di chuyển vào kho mới!",
+        //     });
 
-            console.log(
-              `Ticket ${channel.name} đóng, di chuyển vào ${newCategory.name} bởi ${user.tag}`
-            );
-            process.exit(0); // Restart bot
-          } else {
-            // Set permission và di chuyển ticket
-            await channel.permissionOverwrites.set([
-              {
-                id: interaction.guild.id,
-                deny: [PermissionsBitField.Flags.ViewChannel],
-              },
-            ]);
-            await channel.send({ embeds: [closeEmbed] });
-            await channel.setParent(closedCategory.id);
-            await interaction.editReply({
-              content: "🔒 Ticket đã được đóng và di chuyển vào lưu trữ!",
-            });
+        //     console.log(
+        //       `Ticket ${channel.name} đóng, di chuyển vào ${newCategory.name} bởi ${user.tag}`
+        //     );
+        //     process.exit(0); // Restart bot
+        //   } else {
+        //     // Set permission và di chuyển ticket
+        //     await channel.permissionOverwrites.set([
+        //       {
+        //         id: interaction.guild.id,
+        //         deny: [PermissionsBitField.Flags.ViewChannel],
+        //       },
+        //     ]);
+        //     await channel.send({ embeds: [closeEmbed] });
+        //     await channel.setParent(closedCategory.id);
+        //     await interaction.editReply({
+        //       content: "🔒 Ticket đã được đóng và di chuyển vào lưu trữ!",
+        //     });
 
-            console.log(`Ticket ${channel.name} đóng bởi ${user.tag}`);
-          }
-        } catch (error) {
-          console.error(`Lỗi đóng ticket ${channel.name}: ${error.message}`);
-          await interaction.editReply({
-            content: `❌ Lỗi: ${error.message}. Thử lại sau!`,
-          });
-        }
+        //     console.log(`Ticket ${channel.name} đóng bởi ${user.tag}`);
+        //   }
+        // } catch (error) {
+        //   console.error(`Lỗi đóng ticket ${channel.name}: ${error.message}`);
+        //   await interaction.editReply({
+        //     content: `❌ Lỗi: ${error.message}. Thử lại sau!`,
+        //   });
+        // }
       }
     } catch (error) {
       console.error(`Lỗi khi xử lý button interaction: ${error.message}`);
